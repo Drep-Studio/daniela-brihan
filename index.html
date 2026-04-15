@@ -6,131 +6,131 @@
 <title>Daniela ❤️ Brihan</title>
 
 <style>
-body {
-  margin: 0;
-  overflow: hidden;
-  background: black;
-  font-family: Arial, sans-serif;
-}
+body { margin:0; overflow:hidden; background:black; font-family:Arial; }
 
-/* texto */
 .text {
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  bottom: 10%;
-  color: white;
-  font-size: 1.8em;
-  text-shadow: 0 0 10px #ff00cc, 0 0 20px #6a00ff;
+  position:absolute;
+  bottom:8%;
+  width:100%;
+  text-align:center;
+  color:white;
+  font-size:1.8em;
+  text-shadow:0 0 10px #ff00cc,0 0 20px #6a00ff;
 }
 
-/* botón música */
-.btn {
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 20px;
-  border: none;
-  border-radius: 20px;
-  background: #ff00cc;
-  color: white;
-  font-size: 14px;
-  box-shadow: 0 0 10px #ff00cc;
-}
-
-/* móvil */
-@media (max-width: 600px) {
-  .text {
-    font-size: 1.3em;
-  }
+button {
+  position:absolute;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:10px 20px;
+  border:none;
+  border-radius:20px;
+  background:#ff00cc;
+  color:white;
 }
 </style>
 </head>
+
 <body>
 
-<button class="btn" onclick="playMusic()">🎵 Reproducir música</button>
+<button onclick="playMusic()">🎵 Música</button>
 <div class="text">Daniela ❤️ Brihan</div>
 
 <audio id="music" loop>
-  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">
 </audio>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 
 <script>
+// escena
 const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 100);
+camera.position.z = 6;
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-camera.position.z = 5;
-
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// estrellas
-const starsGeometry = new THREE.BufferGeometry();
-const starsCount = window.innerWidth < 600 ? 800 : 2000;
-const positions = [];
-
-for (let i = 0; i < starsCount; i++) {
-  positions.push((Math.random() - 0.5) * 50);
-  positions.push((Math.random() - 0.5) * 50);
-  positions.push((Math.random() - 0.5) * 50);
-}
-
-starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-
-const starsMaterial = new THREE.PointsMaterial({
-  color: 0xffffff,
-  size: 0.05
-});
-
-const stars = new THREE.Points(starsGeometry, starsMaterial);
-scene.add(stars);
-
 // corazón
-function createHeartShape() {
-  const heartShape = new THREE.Shape();
-  heartShape.moveTo(0, 0);
-  heartShape.bezierCurveTo(0, 1.5, -2, 1.5, -2, 0);
-  heartShape.bezierCurveTo(-2, -2, 0, -3, 0, -4);
-  heartShape.bezierCurveTo(0, -3, 2, -2, 2, 0);
-  heartShape.bezierCurveTo(2, 1.5, 0, 1.5, 0, 0);
-  return heartShape;
+function heartShape(){
+  const s = new THREE.Shape();
+  s.moveTo(0,0);
+  s.bezierCurveTo(0,1.5,-2,1.5,-2,0);
+  s.bezierCurveTo(-2,-2,0,-3,0,-4);
+  s.bezierCurveTo(0,-3,2,-2,2,0);
+  s.bezierCurveTo(2,1.5,0,1.5,0,0);
+  return s;
 }
 
-const heartGeometry = new THREE.ExtrudeGeometry(createHeartShape(), {
-  depth: 0.5,
-  bevelEnabled: true,
-  bevelSize: 0.3
-});
-
-const heartMaterial = new THREE.MeshStandardMaterial({
-  color: 0xff00cc,
-  emissive: 0x6a00ff
-});
-
-const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+const heart = new THREE.Mesh(
+  new THREE.ExtrudeGeometry(heartShape(), { depth:0.5, bevelEnabled:true }),
+  new THREE.MeshStandardMaterial({ color:0xff00cc, emissive:0x6a00ff })
+);
 heart.scale.set(0.5,0.5,0.5);
 scene.add(heart);
 
 // luces
-const light1 = new THREE.PointLight(0xff00cc, 2);
-light1.position.set(5,5,5);
-scene.add(light1);
+scene.add(new THREE.PointLight(0xff00cc,2,50).position.set(5,5,5));
+scene.add(new THREE.PointLight(0x6a00ff,2,50).position.set(-5,-5,5));
 
-const light2 = new THREE.PointLight(0x6a00ff, 2);
-light2.position.set(-5,-5,5);
-scene.add(light2);
+// partículas tipo Tlanex
+const count = 8000;
+const geo = new THREE.BufferGeometry();
+const pos = new Float32Array(count*3);
 
-// animación
-function animate() {
-  requestAnimationFrame(animate);
-  heart.rotation.y += 0.01;
-  stars.rotation.y += 0.0005;
-  renderer.render(scene, camera);
+for(let i=0;i<count;i++){
+  const i3 = i*3;
+  const r = Math.random()*10;
+  const angle = r*1.5 + Math.random()*2;
+
+  pos[i3] = Math.cos(angle)*r;
+  pos[i3+1] = (Math.random()-0.5)*2;
+  pos[i3+2] = Math.sin(angle)*r;
 }
+
+geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+
+const mat = new THREE.PointsMaterial({
+  size:0.05,
+  color:0xff00cc,
+  transparent:true,
+  blending:THREE.AdditiveBlending,
+  depthWrite:false
+});
+
+const particles = new THREE.Points(geo,mat);
+scene.add(particles);
+
+// animación tipo "vida"
+let t = 0;
+
+function animate(){
+  requestAnimationFrame(animate);
+  t += 0.01;
+
+  // latido corazón
+  const scale = 1 + Math.sin(t*3)*0.1;
+  heart.scale.set(scale,scale,scale);
+
+  // movimiento orgánico partículas
+  const positions = geo.attributes.position.array;
+
+  for(let i=0;i<count;i++){
+    const i3 = i*3;
+
+    positions[i3+1] += Math.sin(t + positions[i3])*0.002;
+  }
+
+  geo.attributes.position.needsUpdate = true;
+
+  particles.rotation.y += 0.002;
+  particles.rotation.x += 0.0005;
+
+  renderer.render(scene,camera);
+}
+
 animate();
 
 // música
@@ -139,9 +139,9 @@ function playMusic(){
 }
 
 // responsive
-window.addEventListener("resize", () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth / window.innerHeight;
+addEventListener("resize",()=>{
+  renderer.setSize(innerWidth,innerHeight);
+  camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
 });
 </script>
