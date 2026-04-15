@@ -6,143 +6,122 @@
 <title>Daniela ❤️ Brihan</title>
 
 <style>
-body { margin:0; overflow:hidden; background:black; font-family:Arial; }
+body { margin:0; overflow:hidden; background:black; }
 
-.text {
-  position:absolute;
-  bottom:8%;
-  width:100%;
-  text-align:center;
-  color:white;
-  font-size:1.8em;
-  text-shadow:0 0 10px #ff00cc,0 0 20px #6a00ff;
-}
-
-button {
-  position:absolute;
-  top:20px;
-  left:50%;
-  transform:translateX(-50%);
-  padding:10px 20px;
-  border:none;
-  border-radius:20px;
-  background:#ff00cc;
-  color:white;
-}
+canvas { display:block; }
 </style>
 </head>
-
 <body>
 
-<button onclick="playMusic()">🎵 Música</button>
-<div class="text">Daniela ❤️ Brihan</div>
-
-<audio id="music" loop>
-  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3">
-</audio>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<canvas id="canvas"></canvas>
 
 <script>
-// escena
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 100);
-camera.position.z = 6;
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-const renderer = new THREE.WebGLRenderer({ antialias:true });
-renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
-// corazón
-function heartShape(){
-  const s = new THREE.Shape();
-  s.moveTo(0,0);
-  s.bezierCurveTo(0,1.5,-2,1.5,-2,0);
-  s.bezierCurveTo(-2,-2,0,-3,0,-4);
-  s.bezierCurveTo(0,-3,2,-2,2,0);
-  s.bezierCurveTo(2,1.5,0,1.5,0,0);
-  return s;
+// texto a formar
+const text = "DANIELA 🤍 BRIHAN";
+
+let particles = [];
+
+// crear texto oculto
+function createText() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  ctx.fillStyle = "white";
+  ctx.font = "bold " + (canvas.width < 600 ? 40 : 80) + "px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+  const data = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+
+  particles = [];
+
+  for (let y = 0; y < canvas.height; y += 6) {
+    for (let x = 0; x < canvas.width; x += 6) {
+      const index = (y * canvas.width + x) * 4;
+
+      if (data[index + 3] > 128) {
+        particles.push({
+          x: Math.random()*canvas.width,
+          y: Math.random()*canvas.height,
+          tx: x,
+          ty: y,
+          vx: 0,
+          vy: 0
+        });
+      }
+    }
+  }
 }
 
-const heart = new THREE.Mesh(
-  new THREE.ExtrudeGeometry(heartShape(), { depth:0.5, bevelEnabled:true }),
-  new THREE.MeshStandardMaterial({ color:0xff00cc, emissive:0x6a00ff })
-);
-heart.scale.set(0.5,0.5,0.5);
-scene.add(heart);
+createText();
 
-// luces
-scene.add(new THREE.PointLight(0xff00cc,2,50).position.set(5,5,5));
-scene.add(new THREE.PointLight(0x6a00ff,2,50).position.set(-5,-5,5));
+// interacción
+let mouse = { x: null, y: null };
 
-// partículas tipo Tlanex
-const count = 8000;
-const geo = new THREE.BufferGeometry();
-const pos = new Float32Array(count*3);
-
-for(let i=0;i<count;i++){
-  const i3 = i*3;
-  const r = Math.random()*10;
-  const angle = r*1.5 + Math.random()*2;
-
-  pos[i3] = Math.cos(angle)*r;
-  pos[i3+1] = (Math.random()-0.5)*2;
-  pos[i3+2] = Math.sin(angle)*r;
-}
-
-geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
-
-const mat = new THREE.PointsMaterial({
-  size:0.05,
-  color:0xff00cc,
-  transparent:true,
-  blending:THREE.AdditiveBlending,
-  depthWrite:false
+canvas.addEventListener("mousemove", e => {
+  mouse.x = e.x;
+  mouse.y = e.y;
 });
 
-const particles = new THREE.Points(geo,mat);
-scene.add(particles);
+canvas.addEventListener("touchmove", e => {
+  mouse.x = e.touches[0].clientX;
+  mouse.y = e.touches[0].clientY;
+});
 
-// animación tipo "vida"
-let t = 0;
+// animación
+function animate() {
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
-function animate(){
+  particles.forEach(p => {
+
+    // ir a su posición objetivo
+    let dx = p.tx - p.x;
+    let dy = p.ty - p.y;
+
+    p.vx += dx * 0.01;
+    p.vy += dy * 0.01;
+
+    // repulsión del mouse
+    if (mouse.x !== null) {
+      let mx = p.x - mouse.x;
+      let my = p.y - mouse.y;
+      let dist = Math.sqrt(mx*mx + my*my);
+
+      if (dist < 80) {
+        p.vx += mx * 0.05;
+        p.vy += my * 0.05;
+      }
+    }
+
+    p.vx *= 0.9;
+    p.vy *= 0.9;
+
+    p.x += p.vx;
+    p.y += p.vy;
+
+    // dibujar
+    ctx.fillStyle = "#ff00cc";
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+    ctx.fill();
+  });
+
   requestAnimationFrame(animate);
-  t += 0.01;
-
-  // latido corazón
-  const scale = 1 + Math.sin(t*3)*0.1;
-  heart.scale.set(scale,scale,scale);
-
-  // movimiento orgánico partículas
-  const positions = geo.attributes.position.array;
-
-  for(let i=0;i<count;i++){
-    const i3 = i*3;
-
-    positions[i3+1] += Math.sin(t + positions[i3])*0.002;
-  }
-
-  geo.attributes.position.needsUpdate = true;
-
-  particles.rotation.y += 0.002;
-  particles.rotation.x += 0.0005;
-
-  renderer.render(scene,camera);
 }
 
 animate();
 
-// música
-function playMusic(){
-  document.getElementById("music").play();
-}
-
 // responsive
-addEventListener("resize",()=>{
-  renderer.setSize(innerWidth,innerHeight);
-  camera.aspect = innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
+window.addEventListener("resize", () => {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+  createText();
 });
 </script>
 
