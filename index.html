@@ -2,21 +2,32 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Cosmic Heart ULTRA</title>
+<title>Cosmic 3D REAL</title>
 
 <style>
 body {
   margin: 0;
   overflow: hidden;
-  background: radial-gradient(circle, #02010a, #000000);
+  background: black;
 }
-
 canvas {
   display: block;
+}
+#start {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-size: 28px;
+  font-family: Arial;
+  cursor: pointer;
 }
 </style>
 </head>
 <body>
+
+<div id="start">✨ Toca para comenzar ✨</div>
 
 <audio id="music" loop>
   <source src="musica.mp3" type="audio/mpeg">
@@ -27,113 +38,120 @@ canvas {
 <script>
 const scene = new THREE.Scene();
 
+// 🎥 CÁMARA REAL 3D
 const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
-camera.position.z = 8;
+camera.position.set(0, 0, 12);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// 🔥 PARTICULAS
-const COUNT = 8000;
+// 🌌 NIEBLA (profundidad real)
+scene.fog = new THREE.Fog(0x000000, 5, 30);
+
+// 💫 PARTICULAS
+const COUNT = 9000;
 
 let geometry = new THREE.BufferGeometry();
 let positions = new Float32Array(COUNT * 3);
 let targets = new Float32Array(COUNT * 3);
 
-// ❤️ CORAZÓN
-function heartShape(){
+// ❤️ CORAZÓN 3D (con profundidad Z real)
+function heart3D(){
   let t = Math.random() * Math.PI * 2;
+
   let x = 16 * Math.pow(Math.sin(t), 3);
   let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-  let z = (Math.random()-0.5)*2;
+
+  let z = (Math.random()-0.5) * 4; // profundidad real
 
   return [x*0.05, y*0.05, z];
 }
 
-// 🔤 TEXTO EN PARTÍCULAS
-function textShape(text){
+// 🔤 TEXTO 3D (con capas)
+function text3D(text){
   let canvas = document.createElement("canvas");
   let ctx = canvas.getContext("2d");
 
-  canvas.width = 800;
-  canvas.height = 200;
+  canvas.width = 900;
+  canvas.height = 250;
 
   ctx.fillStyle = "white";
-  ctx.font = "bold 100px Arial";
+  ctx.font = "bold 110px Arial";
   ctx.textAlign = "center";
-  ctx.fillText(text, 400, 120);
+  ctx.fillText(text, 450, 150);
 
-  let data = ctx.getImageData(0,0,800,200).data;
-  let points = [];
+  let data = ctx.getImageData(0,0,900,250).data;
+  let pts = [];
 
-  for(let y=0;y<200;y+=3){
-    for(let x=0;x<800;x+=3){
-      let i = (y*800 + x) * 4;
+  for(let y=0;y<250;y+=3){
+    for(let x=0;x<900;x+=3){
+      let i = (y*900+x)*4;
       if(data[i] > 128){
-        points.push([
-          (x-400)/40,
-          (100-y)/40,
-          (Math.random()-0.5)
+        pts.push([
+          (x-450)/40,
+          (125-y)/40,
+          (Math.random()-0.5)*3 // profundidad
         ]);
       }
     }
   }
 
-  return points;
+  return pts;
 }
 
 // inicial
 for(let i=0;i<COUNT;i++){
-  let [x,y,z] = heartShape();
-  positions[i*3] = x;
-  positions[i*3+1] = y;
-  positions[i*3+2] = z;
+  let [x,y,z] = heart3D();
 
-  targets[i*3] = x;
-  targets[i*3+1] = y;
-  targets[i*3+2] = z;
+  positions[i*3]=x;
+  positions[i*3+1]=y;
+  positions[i*3+2]=z;
+
+  targets[i*3]=x;
+  targets[i*3+1]=y;
+  targets[i*3+2]=z;
 }
 
 geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
 
-// ✨ MATERIAL CON GLOW
+// ✨ MATERIAL GLOW REAL
 let material = new THREE.PointsMaterial({
   color: 0xff4d88,
-  size: 0.04,
+  size: 0.05,
   transparent: true,
   opacity: 0.9,
-  blending: THREE.AdditiveBlending
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
 });
 
 let particles = new THREE.Points(geometry, material);
 scene.add(particles);
 
-// 🌌 ESTRELLAS
+// 🌌 ESTRELLAS EN CAPAS (profundidad real)
 let starGeo = new THREE.BufferGeometry();
 let starArr = [];
 
-for(let i=0;i<5000;i++){
+for(let i=0;i<6000;i++){
   starArr.push(
-    (Math.random()-0.5)*60,
-    (Math.random()-0.5)*60,
-    (Math.random()-0.5)*60
+    (Math.random()-0.5)*100,
+    (Math.random()-0.5)*100,
+    (Math.random()-0.5)*100
   );
 }
 
 starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starArr,3));
 
 let starMat = new THREE.PointsMaterial({
-  color: 0xffffff,
-  size: 0.02
+  size: 0.03,
+  color: 0xffffff
 });
 
 let stars = new THREE.Points(starGeo, starMat);
 scene.add(stars);
 
-// 🖱️ INTERACCIÓN
-let mouseX = 0;
-let mouseY = 0;
+// 🖱️ INTERACCIÓN PROFUNDA
+let mouseX=0, mouseY=0;
 
 function move(x,y){
   mouseX = (x/innerWidth - 0.5);
@@ -143,68 +161,63 @@ function move(x,y){
 document.addEventListener("mousemove", e=>move(e.clientX,e.clientY));
 document.addEventListener("touchmove", e=>move(e.touches[0].clientX,e.touches[0].clientY));
 
-// 🔄 TRANSICIÓN PRO
-let mode = 0;
-let textPoints = textShape("DANIELA ❤️ BRIHAN");
+// 🔄 TRANSICIÓN 3D
+let mode=0;
+let textPts = text3D("DANIELA ❤️");
 
 function switchShape(){
-  mode = (mode + 1) % 3;
+  mode = (mode+1)%3;
 
   for(let i=0;i<COUNT;i++){
-    let target;
+    let t;
 
-    if(mode === 0){
-      target = heartShape();
-    }
-    else if(mode === 1){
-      target = textPoints[i % textPoints.length];
-    }
-    else{
-      target = [
-        (Math.random()-0.5)*10,
-        (Math.random()-0.5)*10,
-        (Math.random()-0.5)*10
-      ];
-    }
+    if(mode===0) t = heart3D();
+    else if(mode===1) t = textPts[i % textPts.length];
+    else t = [(Math.random()-0.5)*12,(Math.random()-0.5)*12,(Math.random()-0.5)*12];
 
-    targets[i*3] = target[0];
-    targets[i*3+1] = target[1];
-    targets[i*3+2] = target[2];
+    targets[i*3]=t[0];
+    targets[i*3+1]=t[1];
+    targets[i*3+2]=t[2];
   }
 }
 
-setInterval(switchShape, 6000);
+setInterval(switchShape,6000);
 
-// 🎬 ANIMACIÓN
+// 🎬 ANIMACIÓN CON CÁMARA (CLAVE DEL 3D)
 function animate(){
   requestAnimationFrame(animate);
 
   let pos = geometry.attributes.position.array;
 
   for(let i=0;i<COUNT;i++){
-    pos[i*3] += (targets[i*3] - pos[i*3]) * 0.03;
-    pos[i*3+1] += (targets[i*3+1] - pos[i*3+1]) * 0.03;
-    pos[i*3+2] += (targets[i*3+2] - pos[i*3+2]) * 0.03;
+    pos[i*3]+= (targets[i*3]-pos[i*3])*0.03;
+    pos[i*3+1]+= (targets[i*3+1]-pos[i*3+1])*0.03;
+    pos[i*3+2]+= (targets[i*3+2]-pos[i*3+2])*0.03;
   }
 
   geometry.attributes.position.needsUpdate = true;
 
-  particles.rotation.y += 0.002 + mouseX * 0.08;
-  particles.rotation.x += mouseY * 0.08;
+  // 🎥 movimiento de cámara (esto da el efecto 3D real)
+  camera.position.x += (mouseX*5 - camera.position.x)*0.05;
+  camera.position.y += (-mouseY*5 - camera.position.y)*0.05;
 
-  stars.rotation.y += 0.0006;
+  camera.lookAt(scene.position);
 
-  renderer.render(scene, camera);
+  particles.rotation.y += 0.003;
+  stars.rotation.y += 0.0008;
+
+  renderer.render(scene,camera);
 }
 
 animate();
 
-// 🎵 MÚSICA
-document.body.addEventListener("click", ()=>{
+// 🎵 INICIO
+document.getElementById("start").onclick = ()=>{
   document.getElementById("music").play();
-});
+  document.getElementById("start").style.display="none";
+};
 
-// 📱 RESPONSIVE
+// RESPONSIVE
 window.addEventListener("resize", ()=>{
   camera.aspect = innerWidth/innerHeight;
   camera.updateProjectionMatrix();
