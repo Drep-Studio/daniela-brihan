@@ -5,20 +5,11 @@
 <title>BRIHAN ❤️ DANIELA</title>
 
 <style>
-body{
-  margin:0;
-  overflow:hidden;
-  background:black;
-}
+body{margin:0;overflow:hidden;background:black;}
 #start{
-  position:absolute;
-  top:50%;
-  width:100%;
-  text-align:center;
-  color:white;
-  font-size:26px;
-  cursor:pointer;
-  letter-spacing:2px;
+ position:absolute;top:50%;width:100%;
+ text-align:center;color:white;
+ font-size:26px;cursor:pointer;
 }
 </style>
 </head>
@@ -40,41 +31,37 @@ body{
 const scene = new THREE.Scene();
 
 const camera = new THREE.PerspectiveCamera(65,innerWidth/innerHeight,0.1,1000);
-camera.position.set(0,0,15);
+camera.position.set(0,0,14);
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-// BLOOM PRO
+// BLOOM
 const composer = new THREE.EffectComposer(renderer);
 composer.addPass(new THREE.RenderPass(scene,camera));
 
 const bloom = new THREE.UnrealBloomPass(
  new THREE.Vector2(innerWidth,innerHeight),
- 1.2,0.6,0.9
+ 1.4,0.7,0.9
 );
 composer.addPass(bloom);
 
-// FUNCIÓN CORAZÓN (PLANO PERO CON CAPAS)
-function heartLayer(zOffset){
- let pts=[];
- for(let i=0;i<1500;i++){
-  let t=Math.random()*Math.PI*2;
-  let x=16*Math.pow(Math.sin(t),3);
-  let y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+// ❤️ CORAZÓN (MUY PLANO)
+function heart(){
+ let t=Math.random()*Math.PI*2;
+ let x=16*Math.pow(Math.sin(t),3);
+ let y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
 
-  pts.push([
-   x*0.035,
-   y*0.035,
-   zOffset + (Math.random()-0.5)*0.1
-  ]);
- }
- return pts;
+ return [
+  x*0.035,
+  y*0.035,
+  (Math.random()-0.5)*0.08 // 👈 CLAVE: MUY POCO Z
+ ];
 }
 
-// TEXTO EN CAPAS (SÓLIDO FAKE 3D)
+// TEXTO (PLANO)
 function textShape(text,offsetX){
  let c=document.createElement("canvas");
  let ctx=c.getContext("2d");
@@ -87,39 +74,32 @@ function textShape(text,offsetX){
  ctx.fillText(text,450,150);
 
  let data=ctx.getImageData(0,0,900,250).data;
- let layers=[];
+ let pts=[];
 
- // 🔥 varias capas para dar volumen
- let depths = [-0.3,-0.15,0,0.15,0.3];
-
- depths.forEach(zOffset=>{
-  for(let y=0;y<250;y+=3){
-   for(let x=0;x<900;x+=3){
-    let i=(y*900+x)*4;
-    if(data[i]>150){
-     layers.push([
-      (x-450)/45 + offsetX,
-      (125-y)/45,
-      zOffset
-     ]);
-    }
+ for(let y=0;y<250;y+=2){
+  for(let x=0;x<900;x+=2){
+   let i=(y*900+x)*4;
+   if(data[i]>150){
+    pts.push([
+     (x-450)/45 + offsetX,
+     (125-y)/45,
+     (Math.random()-0.5)*0.05 // 👈 PLANO
+    ]);
    }
   }
- });
+ }
 
- return layers;
+ return pts;
 }
 
-// CREAR FORMAS
+// FORMAS
 let left = textShape("BRIHAN",-5);
 let right = textShape("DANIELA",5);
 
-// ❤️ corazón con volumen controlado
-let heartPts = [
- ...heartLayer(-0.2),
- ...heartLayer(0),
- ...heartLayer(0.2)
-];
+let heartPts=[];
+for(let i=0;i<6000;i++){
+ heartPts.push(heart());
+}
 
 let all=[...left,...heartPts,...right];
 
@@ -135,7 +115,7 @@ for(let i=0;i<all.length;i++){
 
 geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
 
-// SHADER MATERIAL PRO
+// SHADER PRO (ILUSIÓN DE VOLUMEN)
 let material = new THREE.ShaderMaterial({
  uniforms:{ time:{value:0} },
  vertexShader:`
@@ -143,17 +123,21 @@ let material = new THREE.ShaderMaterial({
   void main(){
     vec3 p = position;
 
-    // movimiento muy sutil (vida)
-    p.z += sin(p.x*2.0 + time)*0.05;
+    // ondulación sutil (vida)
+    p.z += sin(p.x*3.0 + time)*0.03;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p,1.0);
-    gl_PointSize = 2.2;
+
+    // tamaño dinámico (profundidad fake)
+    gl_PointSize = 2.0 + sin(time + p.x)*0.5;
   }
  `,
  fragmentShader:`
   void main(){
     float d = length(gl_PointCoord - vec2(0.5));
-    float alpha = smoothstep(0.5,0.15,d);
+    float alpha = smoothstep(0.5,0.2,d);
+
+    // glow suave
     gl_FragColor = vec4(1.0,1.0,1.0,alpha);
   }
  `,
@@ -168,7 +152,7 @@ scene.add(particles);
 // 🌌 ESTRELLAS
 let starGeo=new THREE.BufferGeometry();
 let starArr=[];
-for(let i=0;i<6000;i++){
+for(let i=0;i<7000;i++){
  starArr.push(
   (Math.random()-0.5)*150,
   (Math.random()-0.5)*150,
@@ -181,7 +165,7 @@ scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({
  size:0.015,opacity:0.5,transparent:true
 })));
 
-// 🖱️ PARALLAX PRO
+// INTERACCIÓN
 let mx=0,my=0;
 
 function move(x,y){
@@ -192,14 +176,14 @@ function move(x,y){
 document.addEventListener("mousemove",e=>move(e.clientX,e.clientY));
 document.addEventListener("touchmove",e=>move(e.touches[0].clientX,e.touches[0].clientY));
 
-// 🎬 ANIMACIÓN
+// ANIMACIÓN
 function animate(){
  requestAnimationFrame(animate);
 
  material.uniforms.time.value += 0.03;
 
- camera.position.x += (mx*4 - camera.position.x)*0.04;
- camera.position.y += (-my*4 - camera.position.y)*0.04;
+ camera.position.x += (mx*4 - camera.position.x)*0.05;
+ camera.position.y += (-my*4 - camera.position.y)*0.05;
 
  camera.lookAt(0,0,0);
 
@@ -213,7 +197,6 @@ document.getElementById("start").onclick=()=>{
  document.getElementById("start").style.display="none";
 };
 
-// RESPONSIVE
 window.addEventListener("resize",()=>{
  camera.aspect=innerWidth/innerHeight;
  camera.updateProjectionMatrix();
